@@ -8,13 +8,16 @@ import index
 
 warnings.filterwarnings('ignore', 'Unverified HTTPS request')
 
+# TODO: Update for new VTOP
+
 if index.error == "":
-    url = "https://vtopbeta.vit.ac.in/vtop/examinations/doDigitalAssignment"
+    url = "https://vtop.vit.ac.in/vtop/examinations/doDigitalAssignment"
     data = {
         'semesterSubId': index.semester
     }
+
     url = index.unified_session.post(url, data=data, headers=index.headers, verify=False)
-    soup = BeautifulSoup(url.content, 'html.parser')
+    soup = BeaL̥utifulSoup(url.content, 'html.parser')
     table = soup.find_all('table')[0]
     tr = table.find_all('tr')
     length = len(tr)
@@ -41,7 +44,7 @@ if index.error == "":
                 'slot': td[11].text,
                 'fName': td[12].find_all('p')[0].text
             }
-            url = "https://vtopbeta.vit.ac.in/vtop/examinations/processDigitalAssignment"
+            url = "https://vtop.vit.ac.in/vtop/examinations/processDigitalAssignment"
             url = index.unified_session.post(url, data=data, headers=index.headers, verify=False)
             soup1 = BeautifulSoup(url.content, 'html.parser')
             table1 = soup1.find_all('table')[1]

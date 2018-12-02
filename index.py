@@ -1,57 +1,59 @@
 import base64
 import io
-import re
-
+import sys
 import warnings
 
 import requests
 from PIL import Image
+from bs4 import BeautifulSoup
 
 from CaptchaService import CaptchaParse
 
-from bs4 import BeautifulSoup
-
-url1 = 'https://vtopbeta.vit.ac.in/vtop/'
 headers = {
-    'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 '
-                  'Safari/537.36',
+    'User-Agent':
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36'
 }
 
 warnings.filterwarnings('ignore', 'Unverified HTTPS request')
-
-reg_no = input("Enter Reg. No. ")
-password = input("Enter Passwd. ")
-semester = "VL2018191"
 unified_session = requests.session()
-url = unified_session.get(url1, headers=headers, verify=False)
-regex = "gsid=[0-9]{6,7};"
-pattern = re.compile(regex)
-gsid = re.findall(pattern, str(url.content))
-error = ""
-if len(gsid) > 1:
-    if len(gsid[0].split("=")) > 1:
-        if len((gsid[0].split("="))[1].split(";")) > 0:
-            gsid = ((gsid[0].split("="))[1].split(";"))[0]
-            print("Logging in...")
-            url = "https://vtopbeta.vit.ac.in/vtop/executeApp/?gsid=" + str(gsid)
-            unified_session.get(url, headers=headers, verify=False)
-            url = "https://vtopbeta.vit.ac.in/vtop/getLogin"
-            url = unified_session.get(url, headers=headers, verify=False)
-            soup = BeautifulSoup(url.content, 'html.parser')
-            image = soup.find('img', alt="vtopCaptcha")
-            image = (image['src'].split(" "))[1]
-            imgdata = base64.b64decode(image)
-            image = Image.open(io.BytesIO(imgdata))
-            captcha = CaptchaParse(image)
-            data = {
-                'uname': reg_no,
-                'passwd': password,
-                'captchaCheck': captcha
-            }
-            url = "https://vtopbeta.vit.ac.in/vtop/processLogin"
-            url = unified_session.post(url, data=data, headers=headers, verify=False)
-            soup = BeautifulSoup(url.content, 'html.parser')
-            if soup.find('p', {'class': 'box-title text-danger'}) is not None:
-                error = soup.find('p', {'class': 'box-title text-danger'}).text
-                print(error)
-# print(soup.prettify())
+
+username = 'your username here'
+password = 'your password here'
+semester = 'semester ID here'  # VL2018191 for Fall 18-19 and VL2018195 for Winter 18-19
+
+url1 = 'https://vtop.vit.ac.in/'
+unified_session.get(url1, headers=headers, verify=False)
+url1 = 'https://vtop.vit.ac.in/vtop/vtopLogin'
+res = unified_session.post(url1, data=None, headers=headers, verify=False)
+
+if 'alt="vtopCaptcha"' not in res.text:
+    print("Cookies error")
+    sys.exit()
+
+print("Logging in...")
+
+soup = BeautifulSoup(res.text, 'html.parser')
+image = soup.find('img', alt="vtopCaptcha")
+image = (image['src'].split(" "))[1]
+imgdata = base64.b64decode(image)
+image = Image.open(io.BytesIO(imgdata))
+captcha = CaptchaParse(image)
+
+data = {
+    'uname': username,
+    'passwd': password,
+    'captchaCheck': captcha
+}
+
+url1 = 'https://vtop.vit.ac.in/vtop/doLogin'
+res = unified_session.post(url1, data=data, headers=headers, verify=False)
+soup = BeautifulSoup(res.text, 'html.parser')
+if soup.find('p', {'class': 'box-title text-danger'}) is not None:
+    error = soup.find('p', {'class': 'box-title text-danger'}).text
+    print(error)
+    sys.exit()
+print('Logged in successfully')
+
+if res.status_code != 200:
+    print("Error on VTOP's end. Yeah they suck.")
+    sys.exit()

@@ -1,5 +1,4 @@
 import json
-import re
 import warnings
 
 from bs4 import BeautifulSoup
@@ -8,28 +7,47 @@ import index
 
 warnings.filterwarnings('ignore', 'Unverified HTTPS request')
 
-if index.error == "":
-    url = "https://vtopbeta.vit.ac.in/vtop/studentsRecord/StudentProfileAllView"
-    data = {
-        'semesterSubId': index.semester
-    }
-    url = index.unified_session.post(url, data=data, headers=index.headers, verify=False)
-    soup = BeautifulSoup(url.content, 'html.parser')
-    table = soup.find_all('table')[0]
-    tr = table.find_all('tr')
-    length = len(tr)
-    data = {}
-    if length > 1:
-        for i in range(1, length):
-            td = tr[i].findAll('td')
-            if len(td) > 1:
-                data[str(td[0].text).replace("\n", ' ').replace('\t', '')] = td[1].text
-    final_assignment = {'Student_Details': data}
-    final_assignment = json.dumps(final_assignment)
-    final_assignment = json.loads(final_assignment)
-    with open('student_details.json', 'w') as outfile:
-        json.dump(final_assignment, outfile, indent=4)
+url = "https://vtop.vit.ac.in/vtop/studentsRecord/StudentProfileAllView"
+data = {
+    "verifyMenu": "true",
+    "winImage": "undefined",
+    "authorizedID": index.username,
+    "nocache": "@(new Date().getTime())"
+}
+url = index.unified_session.post(url, data=data, headers=index.headers, verify=False)
+soup = BeautifulSoup(url.content, 'html.parser')
 
+final = {}
 
-def email():
-    return final_assignment['Student_Details']['Email']
+table = soup.findAll('table')
+rows = []
+for i in range(0, len(table)):
+    trs = table[i].find_all('tr')
+    for j in range(0, len(trs)):
+        rows.append(trs[j])
+
+i = 0
+tr = rows
+blocks = {}
+while True:
+    td = tr[i].find_all('td')
+    mytext = td[0].text
+    i += 1
+    td = tr[i].find_all('td')
+    block = {}
+    while len(td) != 1:
+        block[td[0].text.replace('\t', '').replace('\r', '').replace('\n', ' ').strip()] = td[1].text
+        i += 1
+        if i >= len(tr):
+            break
+        td = tr[i].find_all('td')
+    blocks[mytext.replace('\t', '').replace('\r', '').replace('\n', ' ')] = block
+    if i >= len(tr):
+        break
+
+blocks = json.dumps(blocks)
+blocks = json.loads(blocks)
+with open('student_details.json', 'w') as outfile:
+    json.dump(blocks, outfile, indent=4)
+
+# Email return

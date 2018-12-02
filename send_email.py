@@ -3,7 +3,6 @@ import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
 
-import assignments
 import student_details
 
 
